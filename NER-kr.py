@@ -9,9 +9,6 @@ from tensorflow.keras.utils import to_categorical
 import numpy as np
 import pandas as pd
 import collections
-# import pyLDAvis
-# from kmeans_visualizer import kmeans_to_prepared_data
-
 
 # load token(형태소 단위)
 with open('token/train_token.pickle','rb') as fr:
@@ -70,19 +67,33 @@ def mk_cluster_feature(token,embedding=None,w2v=True,vector_size=128,km=True,dbs
                     words.append(list(word_cluster_map.keys())[i])
             print(words)
 
-    # mk cluster feature vector
+    # mk cluster feature dict
+
+    if one_hot:
+        cluster = to_categorical(cluster)
+
+    word_cluster_map2 = {embedding_key[i]: cluster[i] for i in range(len(embedding_key))}
+
+    return word_cluster_map2
+
+
+cluster_dict = mk_cluster_feature(train_token,embedding,w2v = False,num_cluster=6)
+
+embedding_vector = np.array(list(embedding.values()))
+embedding_key = list(embedding.keys())
+
+
+
+
+# 유니크한 각 형태소에 대해 feature 합치기
+def concat_features(embedding_key,embedding_vector,cluster_dict,ner_dict,pos_dict):
+
     cluster_feature = []
     ner_feature = []
     pos_feature = []
 
-    if one_hot:
-        cluster = to_categorical(cluster)
-        
-    word_cluster_map2 = {embedding_key[i]: cluster[i] for i in range(len(embedding_key))}
-
-    # 유니크한 각 형태소에 대해 feature 생성 및 합치기
     for w in embedding_key:
-        cluster_feature.append(list(word_cluster_map2[str(w)]))
+        cluster_feature.append(list(cluster_dict[str(w)]))
         ner_feature.append(list(ner_dict[str(w)]))
         pos_feature.append(list(pos_dict[str(w)]))
 
@@ -99,4 +110,3 @@ def mk_cluster_feature(token,embedding=None,w2v=True,vector_size=128,km=True,dbs
 
     return total_feature_dict
 
-total = mk_cluster_feature(train_token, embedding=embedding,w2v=False,num_cluster=6)
