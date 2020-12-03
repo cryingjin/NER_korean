@@ -2,13 +2,13 @@ import numpy as np
 import pickle
 from pos_utils import *
 
-with open('./data/train_token.pickle', 'rb') as fs:
+with open('./data/train_morph_token', 'rb') as fs:
     train_token = pickle.load(fs)
-with open('./data/dev_token.pickle', 'rb') as fs:
+with open('./data/test_morph_token', 'rb') as fs:
     dev_token = pickle.load(fs)
-with open('./data/train_pos.pickle', 'rb') as fs:
+with open('./data/train_pos_token', 'rb') as fs:
     train_pos = pickle.load(fs)
-with open('./data/dev_pos.pickle', 'rb') as fs:
+with open('./data/test_pos_token', 'rb') as fs:
     dev_pos = pickle.load(fs)
 
 # pos_vocab 만들기
