@@ -4,11 +4,14 @@ def posOnehot(sentence, vocab):
     onehot_list = []
     for word in sentence:
         onehot = np.zeros(len(vocab))
+
         if word in vocab:
             ind = vocab.index(word)
             onehot[ind] += 1 
+        elif '+' in word:
+            onehot[vocab.index('OTHER')] += 1
         else:
-            onehot['<UNK>'] += 1
+            onehot[vocab.index('UNKNOWN')] += 1
             
         onehot_list.append(onehot)
     return onehot_list
