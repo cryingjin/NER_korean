@@ -5,3 +5,6 @@ pos_feature_okt 파일 : 형태소 단위로 pos mapping 후 dictionary 만들�
 pos_feature_eumjeol 파일 : 음절 단위로 pos mapping
 token 파일 : token 만드는 함수
 
+make_pos_feaure.py : pos_feature 만들기
+pos_utils.py 
+
