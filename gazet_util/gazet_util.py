@@ -2,6 +2,7 @@
 import os
 import numpy as np
 from tqdm import tqdm
+import pickle
 import torch
 
 
@@ -9,11 +10,12 @@ class gazet():
     def __init__(self, config):
         self.config = config
 
+        self.token_file = config["token_file"]
+
     def get_list(self):
 
         gaz_file = open(os.path.join(self.config["root_dir"], self.config["gazet_file"]), 'r', encoding='utf8')
-        # gaz_file = open( os.path.join("../../", "data/gazette.txt"), 'r', encoding='utf8')
-
+        
         dt_list = []
         ps_list = []
         og_list = []
@@ -70,3 +72,21 @@ class gazet():
         gaz_feature_list = gaz_feature_list.permute(0, 2, 1)
 
         return gaz_feature_list
+
+    def get_list_from_pkl(self, pkl_path):
+        with open(pkl_path,"rb") as fr:
+            return pickle.load(fr)
+
+    def get_nedict(self):
+        morphs_list = self.get_list_from_pkl(self.token_file)
+        feature_tensor = self.get_tensor(morphs_list)
+        ne_dict = {}
+        for i in range(len(morphs_list)):
+            for j in range(len(morphs_list[i])):
+                ne_dict[morphs_list[i][j]] = feature_tensor[i][j].tolist() 
+        return ne_dict
+    
+    def get_nedict_pickle(self, file_name):
+        ne_dict = self.get_nedict()
+        with open(file_name,"wb") as fw:
+            pickle.dump(ne_dict, fw)
