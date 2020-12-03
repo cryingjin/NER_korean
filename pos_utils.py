@@ -16,10 +16,23 @@ def posOnehot(sentence, vocab):
         onehot_list.append(onehot)
     return onehot_list
 
-def makePosDict(token, key_list, onehot_vector):
+def makePosDict(morph_file, pos_file):
+    import pickle
+    with open(morph_file, 'rb') as fs:
+        total_token = pickle.load(fs)
+    with open(pos_file, 'rb') as fs:
+        total_pos = pickle.load(fs)
+
+    # pos_vocab 만들기
+    pos_vocab = ['NNG', 'NNP', 'NNB', 'NNBC', 'NR', 'NP', 'VV', 'VA', 'VX', 'VCP', 'VCN', 'MM', 'MAG', 'MAJ', 'IC', 'JKS', 'JKC', 'JKG', 'JKO', 'JKB', 'JKV', 'JKQ', 'JX', 'JC', 'EP', 'EF', 'EC', 'ETN', 'ETM', 'XPN', 'XSN', 'XSV', 'XSA', 'XR', 'SF', 'SE', 'SSO', 'SSC', 'SC', 'SY'	, 'SL', 'SH', 'SN', 'OTHER', 'UNKNOWN', '<SP>']
+    # pos_onehot 벡터 만들기
+    pos_onehot = [posOnehot(pos, pos_vocab) for pos in total_pos]
+    # pos dict 만들기
+    key_list = list(set([y for x in total_token for y in x]))
+
     output = {}
-    for i, sentence in enumerate(token):
+    for i, sentence in enumerate(total_token):
         for j, word in enumerate(sentence):
-            key = key_list[key_list.index(word)]
-            output[key] = onehot_vector[i][j]
+            key = key_list[key_list.index(word)] 
+            output[key] = pos_onehot[i][j]
     return output
