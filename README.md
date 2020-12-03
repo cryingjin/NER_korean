@@ -6,4 +6,5 @@ token.ipynb
 
 # pos_dict 만들기
 make_pos_feaure.py
+(pos_utils.py)
 
