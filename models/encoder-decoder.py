@@ -2,7 +2,6 @@ import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.utils.rnn import pack_padded_sequence
 
 
 class Encoder(nn.Module):
@@ -89,15 +88,14 @@ class Seq2seq(nn.Module):
         self.EOS_TOKEN = 1
         self.PAD_TOKEN = 2
 
-        self.encoder = Encoder(input_size, embedding_size, hidden_size)
-        self.decoder = Decoder(embedding_size, hidden_size, output_size)
+        self.encoder = Encoder(input_size, embedding_size, hidden_size).to(device)
+        self.decoder = Decoder(embedding_size, hidden_size, output_size).to(device)
 
     def create_mask(self, source):
         return source != self.PAD_TOKEN
 
     def forward(self, source, target, teacher_forcing_ratio=0.5):
-        ner_output_size = self.ner_decoder.output_size
-        intent_output_size = self.intent_decoder.output_size
+        output_size = self.decoder.output_size
         batch_size = source.size(0)
         seq_len = target.size(1)
 
@@ -107,10 +105,7 @@ class Seq2seq(nn.Module):
         initial_cell = cell
 
         # tensor to store decoder outputs
-        ner_outputs = torch.zeros(
-            seq_len, batch_size, ner_output_size).to(self.device)
-        intent_outputs = torch.zeros(
-            batch_size, seq_len, intent_output_size).to(self.device)
+        outputs = torch.zeros(seq_len, batch_size, output_size).to(self.device)
 
         # Create mask
         mask = self.create_mask(source)
@@ -121,12 +116,11 @@ class Seq2seq(nn.Module):
         # Step through the length of the output sequence one token at a time
         # Teacher forcing is used to assist training
         for t in range(1, seq_len):
-            output, hidden, cell = self.ner_decoder(
-                decoder_input, hidden, cell)
-            ner_outputs[t] = output
+            output, hidden, cell = self.decoder(decoder_input, hidden, cell)
+            outputs[t] = output
             teacher_force = random.random() < teacher_forcing_ratio
             top1 = output.argmax(1)
             decoder_input = (target[:, t] if teacher_force else top1)
 
         # [batch_size, seq_len, output_size]
-        return ner_outputs.permute(1, 0, 2)
+        return outputs.permute(1, 0, 2)
