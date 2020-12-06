@@ -1,81 +1,81 @@
-import torch
-import torch.nn as nn
+from torch.utils.data import DataLoader, TensorDataset
 import torch.optim as optim
-from sklearn.metrics import classification_report
 
 
-def run_batch(model, batch_data, criterion, optimizer=None):
-    epoch_loss = 0
+def train(model, train_data, test_data, num_epochs=20):
+    optimizer = optim.Adam(model.parameters(), lr=0.005)
+    accuracy_list = []
 
-    for _, batch in enumerate(batch_data):
-        source = batch['morphs']
-        target = batch['entities']
+    for epoch in range(num_epochs):
+        model.train()
+        losses = []
 
-        if optimizer:
+        for step, batch in enumerate(train_dataloader):
+            source = batch['source']
+            target = batch['target']
+
+            loss = model.forward(source, target)
+
             optimizer.zero_grad()
-
-        # output: [batch_size, seq_len, num_entities]
-        # target: [batch_size, seq_len]
-        output = model(source, target)
-        output_dim = output.shape[-1]
-
-        # output: [batch_size * (seq_len - 1), num_entities]
-        # target: [batch_size * (seq_len - 1)]
-        output = output[:, 1:].reshape(-1, output_dim)
-        target = target[:, 1:].reshape(-1)
-
-        loss = criterion(output, target)
-
-        if optimizer:
             loss.backward()
             optimizer.step()
 
-        epoch_loss += loss.item()
+            if (step + 1) % 50 == 0:
+                print(
+                    '{} step processed.. current loss : {}'.format(
+                        step + 1,
+                        loss.data.item()
+                    )
+                )
+            losses.append(loss.data.item())
 
-    return epoch_loss / len(batch_data)
+        print('Average Loss : {}'.format(np.mean(losses)))
 
-
-def train(model, train_data, test_data, num_epochs=50, test_step=5, learning_rate=0.005):
-    model.train()
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-
-    best_valid_loss = float('inf')
-
-    for epoch in range(num_epochs):
-        train_loss = run_batch(model, train_data, criterion, optimizer)
-        validation_loss = float('inf')
-
-        # Test via validation
-        if (epoch + 1) % test_step == 0:
-            validation_loss = evaluate(model, test_data, criterion)
-            if validation_loss < best_valid_loss:
-                best_valid_loss = validation_loss
-                torch.save(model, 'savepoint.model')
-
-        print('Epoch: {:02}/{:02} | Train Loss: {}'.format(epoch + 1, num_epochs, train_loss))
-
-        if (epoch + 1) % test_step == 0:
-            print('Test Step {:02}/{:02} | Validation Loss: {}'.format(
-                int((epoch + 1) / test_step), test_step, validation_loss), end='\n\n')
+        torch.save(model, 'output/savepoint.model')
+        # do_test(model, test_data, idx2tag)
 
 
-def evaluate(model, test_data, criterion):
+def test(config):
+    # 모델 객체 생성
+    model = RNN_CRF(config).cuda()
+    # 단어 딕셔너리 생성
+    word2idx, idx2word = load_vocab(config['word_vocab_file'])
+    tag2idx, idx2tag = load_vocab(config['tag_vocab_file'])
+
+    # 저장된 가중치 Load
+    model.load_state_dict(torch.load(os.path.join(
+        config['output_dir_path'], config['trained_model_name'])))
+
+    # 데이터 Load
+    test_input_features, test_tags = load_data(
+        config, config['dev_file'], word2idx, tag2idx)
+
+    # 불러온 데이터를 TensorDataset 객체로 변환
+    test_features = TensorDataset(test_input_features, test_tags)
+    test_data = DataLoader(
+        test_features, shuffle=False, batch_size=config['batch_size'])
+    # 평가 함수 호출
+    do_test(model, test_data, idx2tag)
+
+
+def do_test(model, test_data, idx2tag):
     model.eval()
 
-    with torch.no_grad():
-        loss = run_batch(model, test_data, criterion)
+    predicts, answers = [], []
 
-    return loss
+    for step, batch in enumerate(test_data):
+        source = batch['source']
+        target = batch['target']
 
+        # 예측 라벨 출력
+        output = model(source)
 
-def test(model, test_data):
-    test_y = None
-    predictions = None
+        # 성능 평가를 위해 예측 값과 정답 값 리스트에 저장
+        for idx, answer in enumerate(tensor2list(labels)):
+            answers.extend([idx2tag[e].replace(
+                '_', '-') for e in answer if idx2tag[e] != '<SP>' and idx2tag[e] != '<PAD>'])
+            predicts.extend([idx2tag[e].replace('_', '-') for i, e in enumerate(
+                output[idx]) if idx2tag[answer[i]] != '<SP>' and idx2tag[answer[i]] != '<PAD>'])
 
-    model.eval()
-    with torch.no_grad():
-        # TODO: Needs implemation (데이터형식을 아직 몰라서 남겨둠)
-        pass
-
-    return classification_report(test_y, predictions, zero_division='1')
+    # 성능 평가
+    print(classification_report(answers, predicts))

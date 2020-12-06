@@ -1,3 +1,4 @@
+<SP>
 B_Adjective
 B_Adverb
 B_Alpha
