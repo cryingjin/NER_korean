@@ -3,7 +3,7 @@
 ## Installation
 
 ```shell script
-$ git clone https://github.com/HyunLee103/NER_korean
+$ git clone https://github.com/cryingjin/NER_korean.git
 $ pip install -r requirements.txt
 ```
 
